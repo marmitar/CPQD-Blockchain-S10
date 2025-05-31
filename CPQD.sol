@@ -57,7 +57,7 @@ contract CPQD {
     uint8 public constant MAXIMUM_VALUE = 10;
     error InvalidBettedValue(uint8 bettedValue, uint8 maximumValue);
 
-    mapping (uint8 => address []) public bets;
+    address[][10] private bets;
 
     function commitment(bytes32 resultHash) external onlyOwner committed(false) {
         committedHash = resultHash;
@@ -74,11 +74,11 @@ contract CPQD {
     function restart() external onlyOwner revealed(true) {
         isCommitted = false;
         isRevealed = false;
+        delete bets;
     }
 
     function bet(uint8 bettedValue) external committed(true) revealed(false) {
         require(bettedValue <= MAXIMUM_VALUE, InvalidBettedValue(bettedValue, MAXIMUM_VALUE));
-
         bets[bettedValue].push(msg.sender);
     }
 
