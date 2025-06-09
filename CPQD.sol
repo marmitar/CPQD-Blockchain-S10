@@ -57,7 +57,7 @@ contract CPQD {
     uint8 public constant MAXIMUM_VALUE = 10;
     error InvalidBettedValue(uint8 bettedValue, uint8 maximumValue);
 
-    address[][10] private bets;
+    address[][MAXIMUM_VALUE + 1] private bets;
 
     function commitment(bytes32 resultHash) external onlyOwner committed(false) {
         committedHash = resultHash;
@@ -83,6 +83,6 @@ contract CPQD {
     }
 
     function getResults() external view revealed(true) returns (address [] memory) {
-        return bets[revealedValue];
+        return bets[revealedValue % (MAXIMUM_VALUE + 1)];
     }
 }
