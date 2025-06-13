@@ -19,6 +19,9 @@ extra-output-files = [
 constantOptimizer = true
 yul = true
 
+[profile.default.optimizer_details.yul_details]
+stackAllocation = true
+
 [fmt]
 line_length = 120
 tab_width = 4
@@ -30,3 +33,21 @@ contract_new_lines = false
 single_line_statement_blocks = 'multi'
 number_underscore = 'thousands'
 hex_underscore = 'bytes'
+
+[profile.checker.model_checker]
+contracts = { 'src/CPQD.sol' = ['CPQD'] }
+engine = 'chc'
+timeout = 10_000
+targets = [
+  'assert',
+  'underflow',
+  'overflow',
+  'divByZero',
+  'constantCondition',
+  'popEmptyArray',
+  'outOfBounds',
+]
+invariants = [
+  'contract',
+  'reentrancy',
+]

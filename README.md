@@ -61,6 +61,12 @@ https://book.getfoundry.sh/
 $ forge build
 ```
 
+### Build with Model Checker
+
+```shell
+$ FOUNDRY_PROFILE=checker forge build
+```
+
 ### Test
 
 ```shell
