@@ -36,7 +36,7 @@ contract CPQD {
 }
 ```
 
-Solution: [CPQD.sol](./CPQD.sol)
+Solution: [CPQD.sol](src/CPQD.sol)
 
 ## Usage
 
@@ -70,16 +70,10 @@ $ forge fmt
 $ forge snapshot
 ```
 
-### Anvil
-
-```shell
-$ anvil
-```
-
 ### Deploy
 
 ```shell
-$ forge script script/CPQD.s.sol:CPQDScript --rpc-url sepolia --private-key <your_private_key>
+$ forge script script/CPQD.s.sol:CPQDDeploy --rpc-url sepolia --private-key <your_private_key>
 ```
 
 ## Setup
