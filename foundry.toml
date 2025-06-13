@@ -18,3 +18,15 @@ extra-output-files = [
 [profile.default.optimizer_details]
 constantOptimizer = true
 yul = true
+
+[fmt]
+line_length = 120
+tab_width = 4
+sort_imports = true
+wrap_comments = true
+bracket_spacing = true
+override_spacing = true
+contract_new_lines = false
+single_line_statement_blocks = 'multi'
+number_underscore = 'thousands'
+hex_underscore = 'bytes'

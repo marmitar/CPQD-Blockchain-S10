@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 pragma solidity >=0.8.27 <0.9.0;
 
-import {Test, console} from "forge-std/Test.sol";
-import {CPQD} from "../src/CPQD.sol";
+import { CPQD } from "../src/CPQD.sol";
+
+import { Test, console } from "forge-std/Test.sol";
 
 contract CPQDTest is Test {
     CPQD public cpqd;

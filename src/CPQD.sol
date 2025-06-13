@@ -54,6 +54,7 @@ contract CPQD {
     }
 
     uint8 public constant MAXIMUM_VALUE = 10;
+
     error InvalidBettedValue(uint8 bettedValue, uint8 maximumValue);
 
     address[][MAXIMUM_VALUE + 1] private bets;
@@ -81,7 +82,7 @@ contract CPQD {
         bets[bettedValue].push(msg.sender);
     }
 
-    function getResults() external view revealed(true) returns (address [] memory) {
+    function getResults() external view revealed(true) returns (address[] memory) {
         return bets[revealedValue % (MAXIMUM_VALUE + 1)];
     }
 }
