@@ -13,7 +13,7 @@ contract CPQDScript is Script {
     function run() public {
         vm.startBroadcast();
 
-        cpqd = new CPQD();
+        cpqd = new CPQD(address(0));
 
         vm.stopBroadcast();
     }

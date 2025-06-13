@@ -9,7 +9,7 @@ contract CPQDTest is Test {
     CPQD public cpqd;
 
     function setUp() public {
-        cpqd = new CPQD();
+        cpqd = new CPQD(address(0));
         // cpqd.setNumber(0);
     }
 

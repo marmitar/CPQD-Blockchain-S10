@@ -14,7 +14,20 @@ contract CPQD {
      * - https://docs.soliditylang.org/en/latest/contracts.html#constant-and-immutable-state-variables
      * - https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/access/Ownable.sol
      */
-    address public immutable OWNER = msg.sender;
+    address public immutable OWNER;
+
+    /**
+     * @notice Sets the owner of the contract to a specified address.
+     * @param owner The address that will be set as the immutable owner.
+     */
+    constructor(address owner) {
+        if (owner != address(0)) {
+            OWNER = owner;
+        } else {
+            // owner not provided, fallback to sender
+            OWNER = msg.sender;
+        }
+    }
 
     /**
      * @dev Account is not authorized to run the request function. This incident will be reported.
