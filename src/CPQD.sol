@@ -72,8 +72,8 @@ contract CPQD {
      */
     bool private isRevealed = false;
     /**
-     * @dev Value revealed from commitment. Should respect `MAXIMUM_VALUE`, but this is not enforced to avoid the
-     *  contract entering a locked state.
+     * @dev Value revealed from commitment. Must be in the range of 0 to `MAXIMUM_VALUE`, otherwise the contract will
+     *  enter a locked state.
      */
     uint8 private revealedValue;
     /**
@@ -112,13 +112,13 @@ contract CPQD {
      * @param salt Salt provided by the owner for reveal, possibly invalid.
      * @param value Value provided by the owner for reveal, possibly invalid.
      */
-    error InvalidReveal(bytes32 committedHash, uint256 salt, uint8 value);
+    error MismatchedReveal(bytes32 committedHash, uint256 salt, uint8 value);
 
     /**
      * @notice Hash `value` and `salt` to validate against committed hash.
      * @param salt Original salt for the committed hash.
      * @param value Original value for the committed hash.
-     * @dev Throws `InvalidReveal` if the inputs don't match. If `salt` is lost, then contract will forever be locked
+     * @dev Throws `MismatchedReveal` if the inputs don't match. If `salt` is lost, then contract will forever be locked
      *  in "committed but not revealed" state.
      */
     function checkCommitment(uint256 salt, uint8 value) private view committed(true) {
@@ -126,10 +126,10 @@ contract CPQD {
         // See https://getfoundry.sh/forge/reference/forge-lint/#asm-keccak256
         assembly {
             mstore(0x00, salt)
-            mstore(0x20, salt)
-            computedHash := keccak256(0x00, 0x21)
+            mstore(0x20, value) // padded to 32 bytes
+            computedHash := keccak256(0x00, 0x40)
         }
-        require(computedHash == committedHash, InvalidReveal(committedHash, salt, value));
+        require(computedHash == committedHash, MismatchedReveal(committedHash, salt, value));
     }
 
     /**
@@ -138,6 +138,12 @@ contract CPQD {
      */
     uint8 public constant MAXIMUM_VALUE = 10;
 
+    /**
+     * @dev Owner tried revealing a value bigger than `MAXIMUM_VALUE`.
+     * @param revealedValue Owner input.
+     * @param maximumValue Same as `MAXIMUM_VALUE`.
+     */
+    error InvalidRevealedValue(uint8 revealedValue, uint8 maximumValue);
     /**
      * @dev User tried betting on a value bigger than `MAXIMUM_VALUE`.
      * @param bettedValue User input.
@@ -168,6 +174,8 @@ contract CPQD {
      */
     function reveal(uint8 value, uint256 salt) external onlyOwner committed(true) revealed(false) {
         checkCommitment(salt, value);
+        require(value <= MAXIMUM_VALUE, InvalidRevealedValue(value, MAXIMUM_VALUE));
+
         isRevealed = true;
         revealedValue = value;
         revealedSalt = salt;
@@ -199,6 +207,6 @@ contract CPQD {
      * @return List of addresses that betted on the correct value.
      */
     function getResults() external view revealed(true) returns (address[] memory) {
-        return bets[revealedValue % (MAXIMUM_VALUE + 1)];
+        return bets[revealedValue];
     }
 }
