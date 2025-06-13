@@ -1,0 +1,7 @@
+{
+  "recommendations": [
+    "EditorConfig.EditorConfig",
+    "NomicFoundation.hardhat-solidity",
+    "Saw-mon-and-Natalie.vscode-evm-toolkit",
+  ],
+}
