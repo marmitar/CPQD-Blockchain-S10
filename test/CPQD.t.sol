@@ -2,15 +2,18 @@
 pragma solidity >=0.8.27 <0.9.0;
 
 import { CPQD } from "../src/CPQD.sol";
+import { StdInvariant, Test } from "forge-std/Test.sol";
 
-import { StdInvariant, Test, console } from "forge-std/Test.sol";
-
+/**
+ * @title Unit tests for the CPQD contract.
+ * @author Tiago de Paula <tiagodepalves@gmail.com>
+ */
 contract CPQDTest is Test {
     // The contract instance we will be testing
     CPQD public cpqd;
 
     // Create addresses for different actors in our tests
-    address public constant OWNER = address(0x1); // A dedicated address for the owner
+    address public constant OWNER = address(0x1);
     address public constant ALICE = address(0x2);
     address public constant BOB = address(0x3);
 
@@ -27,8 +30,6 @@ contract CPQDTest is Test {
         cpqd = new CPQD(OWNER);
         vm.stopPrank();
 
-        // Pre-calculate the hash that the owner will commit to.
-        // This matches the on-chain hashing logic.
         committedHash = keccak256(abi.encode(SECRET_SALT, SECRET_VALUE));
     }
 
@@ -309,10 +310,12 @@ contract CPQDTest is Test {
     }
 }
 
-// We inherit from StdInvariant to get access to helper functions
-// like targetSelector() and excludeSender().
+/**
+ * @title Runtime invariant tests for the CPQD contract.
+ * @author Tiago de Paula <tiagodepalves@gmail.com>
+ */
 contract CPQDInvariantTest is StdInvariant, Test {
-    // Our contract under test
+    // contract under test
     CPQD public cpqd;
 
     // Actors
@@ -395,7 +398,7 @@ contract CPQDInvariantTest is StdInvariant, Test {
     function reveal(uint8 value, uint256 salt) public {
         if (currentState == State.Committed) {
             bytes32 hash = keccak256(abi.encode(salt, value));
-            bytes32 expectedHash = cpqd.committedHash(); // This is a public getter, we need to add it to CPQD.sol
+            bytes32 expectedHash = cpqd.committedHash();
 
             // Only proceed if the reveal is valid
             if (hash == expectedHash && value <= cpqd.MAXIMUM_VALUE()) {
