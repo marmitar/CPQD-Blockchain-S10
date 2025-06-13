@@ -5,9 +5,6 @@ on:
   pull_request:
   workflow_dispatch:
 
-env:
-  FOUNDRY_PROFILE: ci
-
 jobs:
   check:
     name: Foundry project
@@ -38,3 +35,8 @@ jobs:
         run: |
           forge test -vvv
         id: test
+
+      - name: Generate test summary
+        run: |
+          NO_COLOR=1 forge snapshot >> $GITHUB_STEP_SUMMARY
+        id: snapshot
