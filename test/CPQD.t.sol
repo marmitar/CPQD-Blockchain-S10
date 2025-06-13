@@ -3,7 +3,7 @@ pragma solidity >=0.8.27 <0.9.0;
 
 import { CPQD } from "../src/CPQD.sol";
 
-import { Test, console } from "forge-std/Test.sol";
+import { StdInvariant, Test, console } from "forge-std/Test.sol";
 
 contract CPQDTest is Test {
     // The contract instance we will be testing
@@ -306,5 +306,158 @@ contract CPQDTest is Test {
         // Assert that the random hash provided by the fuzzer does not equal the
         // hash we just calculated. Because of the `assume` above, this will always be true.
         assertNotEq(fuzzerHash, correctHash);
+    }
+}
+
+// We inherit from StdInvariant to get access to helper functions
+// like targetSelector() and excludeSender().
+contract CPQDInvariantTest is StdInvariant, Test {
+    // Our contract under test
+    CPQD public cpqd;
+
+    // Actors
+    address public owner = address(0x1);
+    address[] public users; // A list of users who can place bets
+
+    // Ghost Variables: Our off-chain model of the contract's state
+    enum State {
+        Uncommitted,
+        Committed,
+        Revealed
+    }
+
+    State public currentState;
+    // We'll track all bets placed to verify winners later
+    mapping(uint8 => mapping(address => bool)) public hasBetted;
+    uint8 public ghostRevealedValue;
+
+    function setUp() public {
+        // Create a pool of users (bettors)
+        users.push(address(0x10));
+        users.push(address(0x11));
+        users.push(address(0x12));
+
+        // Deploy the contract with our designated owner
+        vm.startPrank(owner);
+        cpqd = new CPQD(owner);
+        vm.stopPrank();
+
+        // --- Invariant Target Configuration ---
+        // This is the core of Handler-based testing. We tell the fuzzer:
+        // "Do NOT call the CPQD contract directly. ONLY call functions on THIS handler contract."
+        targetContract(address(this));
+        // We exclude the owner from the list of random senders for `bet` calls.
+        // The owner's actions are explicitly handled in `commit`, `reveal`, `restart`.
+        excludeSender(owner);
+
+        // Tell the fuzzer to never call setUp or the invariant functions as part of its random sequence.
+        // We build an array of the function selectors we want to ignore.
+        bytes4[] memory selectorsToExclude = new bytes4[](3);
+        selectorsToExclude[0] = this.setUp.selector;
+        selectorsToExclude[1] = this.invariant_stateMachine.selector;
+        selectorsToExclude[2] = this.invariant_winnersAreCorrect.selector;
+
+        // We package this into the required FuzzSelector struct.
+        excludeSelector(FuzzSelector({ addr: address(this), selectors: selectorsToExclude }));
+    }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°*
+     *
+     * HANDLER FUNCTIONS
+     * These are the functions the fuzzer will call randomly.
+     *
+     *..°•.°•.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.*/
+
+    function commitment(bytes32 hash) public {
+        // Only allow this action if the contract is in the correct state
+        if (currentState == State.Uncommitted) {
+            vm.prank(owner);
+            cpqd.commitment(hash);
+            // Update our ghost state
+            currentState = State.Committed;
+        }
+    }
+
+    function bet(uint8 bettedValue, uint256 userIndex) public {
+        // Only allow bets in the committed state
+        if (currentState == State.Committed) {
+            // Constrain inputs to valid ranges
+            bettedValue = uint8(bound(bettedValue, 0, cpqd.MAXIMUM_VALUE()));
+            address bettor = users[userIndex % users.length];
+
+            // Record the bet in our ghost state and place the actual bet
+            hasBetted[bettedValue][bettor] = true;
+            vm.prank(bettor);
+            cpqd.bet(bettedValue);
+        }
+    }
+
+    function reveal(uint8 value, uint256 salt) public {
+        if (currentState == State.Committed) {
+            bytes32 hash = keccak256(abi.encode(salt, value));
+            bytes32 expectedHash = cpqd.committedHash(); // This is a public getter, we need to add it to CPQD.sol
+
+            // Only proceed if the reveal is valid
+            if (hash == expectedHash && value <= cpqd.MAXIMUM_VALUE()) {
+                vm.prank(owner);
+                cpqd.reveal(value, salt);
+                currentState = State.Revealed;
+                ghostRevealedValue = value;
+            }
+        }
+    }
+
+    function restart() public {
+        if (currentState == State.Revealed) {
+            vm.prank(owner);
+            cpqd.restart();
+            // Reset our ghost state and all bet tracking
+            currentState = State.Uncommitted;
+            // FIXME: delete hasBetted;
+        }
+    }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°*
+     *
+     * INVARIANTS
+     * These properties MUST always be true after any function call.
+     *
+     *..°•.°•.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.*/
+
+    /**
+     * @notice Invariant: The contract's state machine can only move in a valid sequence.
+     * @dev For example, it's impossible for the contract to be revealed if it was never committed.
+     * This invariant checks that our ghost state matches the contract's real state.
+     */
+    function invariant_stateMachine() public view {
+        bool isCommitted = cpqd.isCommitted();
+        bool isRevealed = cpqd.isRevealed();
+
+        if (currentState == State.Uncommitted) {
+            assertFalse(isCommitted);
+            assertFalse(isRevealed);
+        } else if (currentState == State.Committed) {
+            assertTrue(isCommitted);
+            assertFalse(isRevealed);
+        } else if (currentState == State.Revealed) {
+            assertTrue(isCommitted);
+            assertTrue(isRevealed);
+        }
+    }
+
+    /**
+     * @notice Invariant: The list of winners returned by the contract must be correct.
+     * @dev It proves that only users who bet on the correct value are included in the winners' array.
+     */
+    function invariant_winnersAreCorrect() public view {
+        // This invariant only applies when the contract is in the revealed state.
+        if (currentState == State.Revealed) {
+            address[] memory winners = cpqd.getResults();
+            for (uint256 i = 0; i < winners.length; i++) {
+                // Assert that every address in the winners array is an address that
+                // we recorded as having placed a bet on the correct value.
+                assertTrue(hasBetted[ghostRevealedValue][winners[i]]);
+            }
+        }
     }
 }

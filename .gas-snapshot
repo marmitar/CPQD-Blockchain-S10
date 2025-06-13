@@ -1,3 +1,5 @@
+CPQDInvariantTest:invariant_stateMachine() (runs: 256, calls: 128000, reverts: 0)
+CPQDInvariantTest:invariant_winnersAreCorrect() (runs: 256, calls: 128000, reverts: 0)
 CPQDTest:testFuzz_Bet(uint8) (runs: 4096, μ: 106347, ~: 106347)
 CPQDTest:testFuzz_Commitment(bytes32) (runs: 4096, μ: 62122, ~: 62122)
 CPQDTest:testFuzz_HashCollision(bytes32,uint256) (runs: 4096, μ: 3844, ~: 3844)

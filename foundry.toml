@@ -37,6 +37,9 @@ hex_underscore = 'bytes'
 [fuzz]
 runs = 4096
 
+[invariant]
+runs = 256
+
 [profile.checker.model_checker]
 contracts = { 'src/CPQD.sol' = ['CPQD'] }
 engine = 'chc'
