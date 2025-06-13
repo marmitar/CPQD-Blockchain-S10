@@ -84,7 +84,7 @@ $ forge script script/CPQD.s.sol:CPQDScript --rpc-url sepolia --private-key <you
 
 ## Setup
 
-See [](https://getfoundry.sh/guides/scripting-with-solidity/#configuring-foundrytoml)
+See [Configuring `foundry.toml`](https://getfoundry.sh/guides/scripting-with-solidity/#configuring-foundrytoml).
 
 ### Sepolia API
 
