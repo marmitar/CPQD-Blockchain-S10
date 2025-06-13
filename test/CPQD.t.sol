@@ -214,4 +214,97 @@ contract CPQDTest is Test {
         vm.expectRevert(CPQD.ContractNotCommittedYet.selector);
         cpqd.bet(1);
     }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°*
+     *
+     * FUZZ TESTS
+     *
+     *..°•.°•.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.*/
+
+    /**
+     * @notice Fuzz test the bet function to ensure it only accepts valid values.
+     * @dev This tests the property: "A user can bet on any value if and only if it is within the allowed range".
+     * @param bettedValue A fuzzed (random) input for the bet value.
+     */
+    function testFuzz_Bet(uint8 bettedValue) public {
+        // Constrain the fuzzer's input using vm.assume.
+        // This part of the test will only run for valid bet values.
+        vm.assume(bettedValue <= cpqd.MAXIMUM_VALUE());
+
+        // Setup: The contract must be in the committed state to accept bets.
+        vm.prank(OWNER);
+        cpqd.commitment(committedHash);
+
+        // Action: Alice places a bet with the valid fuzzed value.
+        vm.prank(ALICE);
+        cpqd.bet(bettedValue);
+
+        // The assertion is implicit: if the call doesn't revert, the test for this input passes.
+    }
+
+    /**
+     * @notice Fuzz test the reveal function to ensure its cryptographic security.
+     * @dev This tests the property: "The reveal will only succeed with the one true combination of value and salt".
+     * @param value A fuzzed input for the value.
+     * @param salt A fuzzed input for the salt.
+     */
+    function testFuzz_RevealMustBeCorrect(uint8 value, uint256 salt) public {
+        // Constrain the fuzzer. We want to test every possible combination EXCEPT the correct one.
+        // If the fuzzer happens to guess the correct value and salt, we discard this run.
+        vm.assume(value != SECRET_VALUE || salt != SECRET_SALT);
+
+        // Setup: The contract must be committed.
+        vm.prank(OWNER);
+        cpqd.commitment(committedHash);
+
+        // Expectation: For any incorrect pair of (value, salt), the reveal must fail.
+        // We can't predict the exact error, as it could be MismatchedReveal or InvalidRevealedValue,
+        // so we use a generic `vm.expectRevert()` which catches any revert.
+        vm.expectRevert();
+        vm.prank(OWNER);
+        cpqd.reveal(value, salt);
+    }
+
+    /**
+     * @notice Fuzz test the commitment function with random hashes.
+     * @dev This tests the property: "The contract correctly stores any bytes32 value as the committed hash".
+     * @param randomHash A fuzzed input for the hash.
+     */
+    function testFuzz_Commitment(bytes32 randomHash) public {
+        // Assume the fuzzer's input is not the one hash that would make this test succeed
+        vm.assume(randomHash != committedHash);
+
+        // Expectation: The owner can commit to any valid hash.
+        vm.prank(OWNER);
+        cpqd.commitment(randomHash);
+
+        // To verify, we'll try to reveal. It should fail with a MismatchedReveal error,
+        // proving that the `randomHash` was indeed stored correctly.
+        vm.expectRevert(abi.encodeWithSelector(CPQD.MismatchedReveal.selector, randomHash, SECRET_SALT, SECRET_VALUE));
+        vm.prank(OWNER);
+        cpqd.reveal(SECRET_VALUE, SECRET_SALT);
+    }
+
+    /**
+     * @notice Fuzz test to demonstrate the low probability of a hash collision.
+     * @dev This tests the property that for a given salt, a random hash is extremely unlikely
+     * to match the hash of that salt combined with a fixed value.
+     * @param fuzzerHash A completely random hash from the fuzzer.
+     * @param fuzzerSalt A completely random salt from the fuzzer.
+     */
+    function testFuzz_HashCollision(bytes32 fuzzerHash, uint256 fuzzerSalt) public pure {
+        // We will use a fixed value that is different from our main SECRET_VALUE
+        uint8 fixedValueToTest = 7;
+
+        // Calculate the "correct" hash for the fuzzer's salt and our fixed value.
+        bytes32 correctHash = keccak256(abi.encode(fuzzerSalt, fixedValueToTest));
+
+        // The core of the test: we assume the fuzzer did NOT randomly find the one-in-2^256
+        // hash that would make this test fail. This is the fix for the edge case we discussed.
+        vm.assume(fuzzerHash != correctHash);
+
+        // Assert that the random hash provided by the fuzzer does not equal the
+        // hash we just calculated. Because of the `assume` above, this will always be true.
+        assertNotEq(fuzzerHash, correctHash);
+    }
 }

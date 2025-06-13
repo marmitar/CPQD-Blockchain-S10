@@ -34,6 +34,9 @@ single_line_statement_blocks = 'multi'
 number_underscore = 'thousands'
 hex_underscore = 'bytes'
 
+[fuzz]
+runs = 4096
+
 [profile.checker.model_checker]
 contracts = { 'src/CPQD.sol' = ['CPQD'] }
 engine = 'chc'
