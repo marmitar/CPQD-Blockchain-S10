@@ -51,3 +51,9 @@ invariants = [
   'contract',
   'reentrancy',
 ]
+
+[rpc_endpoints]
+sepolia = "https://sepolia.infura.io/v3/${METAMASK_API_KEY}"
+
+[etherscan]
+sepolia = { key = "${ETHERSCAN_API_KEY}" }

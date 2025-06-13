@@ -38,21 +38,6 @@ contract CPQD {
 
 Solution: [CPQD.sol](./CPQD.sol)
 
-## Foundry
-
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
-
-Foundry consists of:
-
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
-
-## Documentation
-
-https://book.getfoundry.sh/
-
 ## Usage
 
 ### Build
@@ -61,7 +46,7 @@ https://book.getfoundry.sh/
 $ forge build
 ```
 
-### Build with Model Checker
+#### Build with Model Checker
 
 ```shell
 $ FOUNDRY_PROFILE=checker forge build
@@ -94,19 +79,25 @@ $ anvil
 ### Deploy
 
 ```shell
-$ forge script script/CPQD.s.sol:CPQDScript --rpc-url <your_rpc_url> --private-key <your_private_key>
+$ forge script script/CPQD.s.sol:CPQDScript --rpc-url sepolia --private-key <your_private_key>
 ```
 
-### Cast
+## Setup
 
-```shell
-$ cast <subcommand>
+See [](https://getfoundry.sh/guides/scripting-with-solidity/#configuring-foundrytoml)
+
+### Sepolia API
+
+Get an API Key from [MetaMask Developer](https://developer.metamask.io/key/all-endpoints) and enable the Ethereum Sepolia endpoint. Copy the key and save to `METAMASK_API_KEY` in a `.env` file:
+
+```sh
+METAMASK_API_KEY=0123456789abcdef0123456789abcdef
 ```
 
-### Help
+### Etherscan API
 
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
+Additionally, get an API Key from [Etherscan](https://etherscan.io/myapikey) and save to `ETHERSCAN_API_KEY` in `.env`:
+
+```sh
+ETHERSCAN_API_KEY=ABCDEFGHIJKLMNOPQRSTUVWXYZ01234567
 ```
