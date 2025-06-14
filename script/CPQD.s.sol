@@ -2,7 +2,7 @@
 pragma solidity >=0.8.27 <0.9.0;
 
 import { CPQD } from "../src/CPQD.sol";
-import { Script } from "forge-std/Script.sol";
+import { Script, console } from "forge-std/Script.sol";
 
 /**
  * @title Deploy a new CPQD contract to a network.
@@ -17,12 +17,15 @@ contract CPQDDeploy is Script {
      */
     function run() external returns (CPQD, address) {
         address owner = vm.envOr("OWNER", address(0));
+        console.log("current sender:", msg.sender);
+        console.log("selected owner:", owner);
 
         vm.startBroadcast();
         CPQD cpqd = new CPQD(owner);
         vm.stopBroadcast();
 
-        return (cpqd, cpqd.OWNER());
+        console.log("new contract:", address(cpqd));
+        return (cpqd, owner);
     }
 }
 
@@ -37,13 +40,17 @@ contract CPQDScript is Script {
      * @dev Read input from `envName`, falling back to prompting the user with `promptMessage`.
      */
     function readOrPrompt(string memory envName, string memory promptMessage) private returns (string memory) {
-        try vm.envString(envName) returns (string memory result) {
-            if (bytes(result).length != 0) {
-                return result;
+        try vm.envString(envName) returns (string memory envValue) {
+            console.log("evironment variable:", envName, envValue);
+
+            if (bytes(envValue).length != 0) {
+                return envValue;
             }
         } catch { }
 
-        return vm.prompt(promptMessage);
+        string memory promptInput = vm.prompt(promptMessage);
+        console.log("user input on prompt:", promptMessage, "=>", promptInput);
+        return promptInput;
     }
 
     function targetContract() internal returns (CPQD) {
@@ -57,6 +64,7 @@ contract CPQDScript is Script {
 
         require(cpqd_addr != address(0));
         cpqd = CPQD(cpqd_addr);
+        console.log("target contract selected:", cpqd_addr);
         return cpqd;
     }
 
@@ -68,13 +76,17 @@ contract CPQDScript is Script {
         uint256 value = vm.parseUint(input);
 
         require(value < cpqd.MAXIMUM_VALUE());
-        return uint8(value);
+        uint8 result = uint8(value);
+        console.log("input value:", result);
+        return result;
     }
 
     function inputSalt() internal returns (uint256) {
         string memory input = readOrPrompt("SALT", "Enter secret salt");
         bytes32 salt = vm.parseBytes32(input);
-        return uint256(salt);
+        uint256 result = uint256(salt);
+        console.log("input salt:", result);
+        return result;
     }
 
     function randomSalt() internal returns (uint256) {
@@ -83,9 +95,12 @@ contract CPQDScript is Script {
         inputs[1] = "-c";
         inputs[2] = "32";
         inputs[3] = "/dev/random";
+        console.log(inputs[0], inputs[1], inputs[2], inputs[3]);
 
         bytes memory randomBytes = vm.ffi(inputs);
-        return uint256(bytes32(randomBytes));
+        uint256 result = uint256(bytes32(randomBytes));
+        console.log("random salt:", result);
+        return result;
     }
 }
 
@@ -113,6 +128,7 @@ contract CPQDCommit is CPQDScript {
         cpqd.commitment(commitHash);
         vm.stopBroadcast();
 
+        console.log("commitment done:", uint256(commitHash));
         return (cpqd, value, salt, commitHash);
     }
 }
@@ -137,6 +153,7 @@ contract CPQDBet is CPQDScript {
         cpqd.bet(value);
         vm.stopBroadcast();
 
+        console.log("bet placed:", value, msg.sender);
         return (cpqd, value, msg.sender);
     }
 }
@@ -158,10 +175,14 @@ contract CPQDReveal is CPQDScript {
         uint8 value = inputValue();
         uint256 salt = inputSalt();
 
+        bytes32 commitHash = keccak256(abi.encode(salt, value));
+        console.log("revealing commitment from hash:", uint256(commitHash));
+
         vm.startBroadcast();
         cpqd.reveal(value, salt);
         vm.stopBroadcast();
 
+        console.log("commitment revealed:", salt, value);
         return (cpqd, value, salt);
     }
 }
@@ -182,6 +203,7 @@ contract CPQDRestart is CPQDScript {
         cpqd.restart();
         vm.stopBroadcast();
 
+        console.log("contract restarted.");
         return cpqd;
     }
 }
