@@ -38,7 +38,7 @@ contract CPQD {
 
 Solution: [CPQD.sol](src/CPQD.sol)
 
-## Usage
+## Development
 
 ### Build
 
@@ -70,17 +70,13 @@ $ forge fmt
 $ forge snapshot
 ```
 
-### Deploy
+## Scripts
 
-```shell
-$ forge script script/CPQD.s.sol:CPQDDeploy --rpc-url sepolia --private-key <your_private_key>
-```
-
-## Setup
+### Setup
 
 See [Configuring `foundry.toml`](https://getfoundry.sh/guides/scripting-with-solidity/#configuring-foundrytoml).
 
-### Sepolia API
+#### Sepolia API
 
 Get an API Key from [MetaMask Developer](https://developer.metamask.io/key/all-endpoints) and enable the Ethereum Sepolia endpoint. Copy the key and save to `METAMASK_API_KEY` in a `.env` file:
 
@@ -88,10 +84,67 @@ Get an API Key from [MetaMask Developer](https://developer.metamask.io/key/all-e
 METAMASK_API_KEY=0123456789abcdef0123456789abcdef
 ```
 
-### Etherscan API
+#### Etherscan API
 
 Additionally, get an API Key from [Etherscan](https://etherscan.io/myapikey) and save to `ETHERSCAN_API_KEY` in `.env`:
 
 ```sh
 ETHERSCAN_API_KEY=ABCDEFGHIJKLMNOPQRSTUVWXYZ01234567
+```
+
+### Deploy
+
+```shell
+$ forge script --rpc-url sepolia --private-key $PRIVATE_KEY --broadcast script/CPQD.s.sol:CPQDDeploy
+
+== Return ==
+0: contract CPQD 0x8A791620dd6260079BF849Dc5567aDC3F2FdC318
+1: address 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+```
+
+### Commit
+
+```shell
+$ CONTRACT=0x8A791620dd6260079BF849Dc5567aDC3F2FdC318 VALUE=7 \
+  forge script --rpc-url sepolia --private-key $PRIVATE_KEY --broadcast script/CPQD.s.sol:CPQDCommit
+
+== Return ==
+0: contract CPQD 0x8A791620dd6260079BF849Dc5567aDC3F2FdC318
+1: uint8 7
+2: uint256 20185558336621230769913983648758001828384355342540795198665400638095085795870 [2.018e76]
+3: bytes32 0x1f1cd6908da08f7cbc9a78a56431aa833d12fb2b4a203ec3d3aeb1102e99219a
+```
+
+### Place Bet
+
+```shell
+$ CONTRACT=0x8A791620dd6260079BF849Dc5567aDC3F2FdC318 VALUE=7 \
+  forge script --rpc-url sepolia --private-key $PRIVATE_KEY --broadcast script/CPQD.s.sol:CPQDBet
+
+== Return ==
+0: contract CPQD 0x8A791620dd6260079BF849Dc5567aDC3F2FdC318
+1: uint8 7
+2: address 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+```
+
+### Reveal
+
+```shell
+$ CONTRACT=0x8A791620dd6260079BF849Dc5567aDC3F2FdC318 VALUE=7 SALT=20185558336621230769913983648758001828384355342540795198665400638095085795870 \
+  forge script --rpc-url sepolia --private-key $PRIVATE_KEY --broadcast script/CPQD.s.sol:CPQDReveal
+
+== Return ==
+0: contract CPQD 0x8A791620dd6260079BF849Dc5567aDC3F2FdC318
+1: uint8 7
+2: uint256 20185558336621230769913983648758001828384355342540795198665400638095085795870 [2.018e76]
+```
+
+### Restart
+
+```shell
+$ CONTRACT=0x8A791620dd6260079BF849Dc5567aDC3F2FdC318 \
+  forge script --rpc-url sepolia --private-key $PRIVATE_KEY --broadcast script/CPQD.s.sol:CPQDRestart
+
+== Return ==
+0: contract CPQD 0x8A791620dd6260079BF849Dc5567aDC3F2FdC318
 ```
