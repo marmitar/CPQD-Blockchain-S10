@@ -9,3 +9,12 @@ Em nossas aulas sobre desenvolvimento de smart contracts (contratos inteligentes
 Para publicar e executar o smart contract em questão você precisará de Ether na rede de testes Sepolia, você pode conseguir essas criptomoedas de forma gratuita através do Ethereum Sepolia Faucet do Google: <https://cloud.google.com/application/web3/faucet/ethereum/sepolia>. Para interagir com a rede Sepolia através do Remix utilize o Metamask: <https://metamask.io/>.
 
 Smart Contract de referência: [CPQD.sol](./CPQD.sol)
+
+------------------------------------------------------------------------------------------------------------------------
+
+Com base nos resultados alcançados nesta atividade, responda as perguntas que seguem.
+
+1. O que foi necessário implementar para alcançar o objetivo da atividade?
+2. Qual é o endereço do contrato na rede de testes Sepolia?
+3. Link para 1 exemplo de transação executado na rede de testes Sepolia. Deve ser uma transação diferente do deploy do contrato.
+4. Anexe uma print do seu Smart Contract.
