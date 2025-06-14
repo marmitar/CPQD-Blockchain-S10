@@ -33,27 +33,47 @@ contract CPQDDeploy is Script {
 contract CPQDScript is Script {
     CPQD private cpqd = CPQD(address(0));
 
+    /**
+     * @dev Read input from `envName`, falling back to prompting the user with `promptMessage`.
+     */
+    function readOrPrompt(string memory envName, string memory promptMessage) private returns (string memory) {
+        try vm.envString(envName) returns (string memory result) {
+            if (bytes(result).length != 0) {
+                return result;
+            }
+        } catch { }
+
+        return vm.prompt(promptMessage);
+    }
+
     function targetContract() internal returns (CPQD) {
-        address cpqd_addr = vm.envOr("CONTRACT", address(0));
-        if (cpqd_addr != address(0)) {
-            cpqd = CPQD(cpqd_addr);
+        address cpqd_addr;
+        if (address(cpqd) == address(0)) {
+            string memory input = readOrPrompt("CONTRACT", "Enter contract address");
+            cpqd_addr = vm.parseAddress(input);
+        } else {
+            cpqd_addr = vm.envOr("CONTRACT", address(cpqd));
         }
 
-        require(address(cpqd) != address(0));
+        require(cpqd_addr != address(0));
+        cpqd = CPQD(cpqd_addr);
         return cpqd;
     }
 
     /**
-     * @dev Must be called after `targetContract`.
+     * @dev Must be called after `targetContract()`.
      */
-    function inputValue() internal view returns (uint8) {
-        uint value = vm.envUint("VALUE");
+    function inputValue() internal returns (uint8) {
+        string memory input = readOrPrompt("VALUE", "Enter chosen value");
+        uint256 value = vm.parseUint(input);
+
         require(value < cpqd.MAXIMUM_VALUE());
         return uint8(value);
     }
 
-    function inputSalt() internal view returns (uint256) {
-        bytes32 salt = vm.envBytes32("SALT");
+    function inputSalt() internal returns (uint256) {
+        string memory input = readOrPrompt("SALT", "Enter secret salt");
+        bytes32 salt = vm.parseBytes32(input);
         return uint256(salt);
     }
 
@@ -75,8 +95,8 @@ contract CPQDScript is Script {
  */
 contract CPQDCommit is CPQDScript {
     /**
-     * @notice Secret value is passed on the `VALUE` environment variable. Uses last contract address for commitment,
-     *  or a new one provided via the `CONTRACT` variable.
+     * @notice Secret value can be passed on the `VALUE` environment variable. Uses last contract address for
+     *  commitment, or a new one provided via the `CONTRACT` variable.
      * @return Information of the target contract in the network.
      * @return Chosen secret value.
      * @return Randomly generated salt.
@@ -103,7 +123,7 @@ contract CPQDCommit is CPQDScript {
  */
 contract CPQDBet is CPQDScript {
     /**
-     * @notice Betted value is passed on the `VALUE` environment variable. Uses last contract address for betting,
+     * @notice Betted value can be passed on the `VALUE` environment variable. Uses last contract address for betting,
      *  or a new one provided via the `CONTRACT` variable.
      * @return Information of the target contract in the network.
      * @return Betted value.
@@ -127,7 +147,7 @@ contract CPQDBet is CPQDScript {
  */
 contract CPQDReveal is CPQDScript {
     /**
-     * @notice Secret value and salt are passed on the `VALUE` and `SALT` environment variables, respectively. Uses
+     * @notice Secret value and salt can be passed on the `VALUE` and `SALT` environment variables, respectively. Uses
      *  last contract address for reveal, or a new one provided via the `CONTRACT` variable.
      * @return Information of the target contract in the network.
      * @return Revealed secret value.
