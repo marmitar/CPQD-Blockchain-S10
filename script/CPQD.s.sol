@@ -25,7 +25,8 @@ contract CPQDDeploy is Script {
         vm.stopBroadcast();
 
         console.log("new contract:", address(cpqd));
-        return (cpqd, owner);
+        console.log("effective owner:", cpqd.OWNER());
+        return (cpqd, cpqd.OWNER());
     }
 }
 
@@ -43,7 +44,7 @@ contract CPQDScript is Script {
         try vm.envString(envName) returns (string memory envValue) {
             console.log("evironment variable:", envName, envValue);
 
-            if (bytes(envValue).length != 0) {
+            if (bytes(vm.trim(envValue)).length != 0) {
                 return envValue;
             }
         } catch { }
@@ -83,22 +84,20 @@ contract CPQDScript is Script {
 
     function inputSalt() internal returns (uint256) {
         string memory input = readOrPrompt("SALT", "Enter secret salt");
-        bytes32 salt = vm.parseBytes32(input);
+        uint256 salt;
+        try vm.parseBytes32(input) returns (bytes32 data) {
+            salt = uint256(data);
+        } catch {
+            salt = vm.parseUint(input);
+        }
+
         uint256 result = uint256(salt);
         console.log("input salt:", result);
         return result;
     }
 
-    function randomSalt() internal returns (uint256) {
-        string[] memory inputs = new string[](4);
-        inputs[0] = "head";
-        inputs[1] = "-c";
-        inputs[2] = "32";
-        inputs[3] = "/dev/random";
-        console.log(inputs[0], inputs[1], inputs[2], inputs[3]);
-
-        bytes memory randomBytes = vm.ffi(inputs);
-        uint256 result = uint256(bytes32(randomBytes));
+    function randomSalt() internal view returns (uint256) {
+        uint256 result = vm.randomUint(256);
         console.log("random salt:", result);
         return result;
     }
