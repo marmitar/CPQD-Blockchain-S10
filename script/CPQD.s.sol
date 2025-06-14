@@ -34,7 +34,7 @@ contract CPQDDeploy is Script {
  * @title Base class for other CPQD scripts.
  * @author Tiago de Paula <tiagodepalves@gmail.com>
  */
-contract CPQDScript is Script {
+abstract contract CPQDScript is Script {
     CPQD private cpqd = CPQD(address(0));
 
     /**
@@ -55,17 +55,17 @@ contract CPQDScript is Script {
     }
 
     function targetContract() internal returns (CPQD) {
-        address cpqd_addr;
+        address cpqdAddr;
         if (address(cpqd) == address(0)) {
             string memory input = readOrPrompt("CONTRACT", "Enter contract address");
-            cpqd_addr = vm.parseAddress(input);
+            cpqdAddr = vm.parseAddress(input);
         } else {
-            cpqd_addr = vm.envOr("CONTRACT", address(cpqd));
+            cpqdAddr = vm.envOr("CONTRACT", address(cpqd));
         }
 
-        require(cpqd_addr != address(0));
-        cpqd = CPQD(cpqd_addr);
-        console.log("target contract selected:", cpqd_addr);
+        require(cpqdAddr != address(0));
+        cpqd = CPQD(cpqdAddr);
+        console.log("target contract selected:", cpqdAddr);
         return cpqd;
     }
 
@@ -76,7 +76,7 @@ contract CPQDScript is Script {
         string memory input = readOrPrompt("VALUE", "Enter chosen value");
         uint256 value = vm.parseUint(input);
 
-        require(value < cpqd.MAXIMUM_VALUE());
+        require(value <= cpqd.MAXIMUM_VALUE());
         uint8 result = uint8(value);
         console.log("input value:", result);
         return result;
@@ -127,8 +127,8 @@ contract CPQDCommit is CPQDScript {
         cpqd.commitment(commitHash);
         vm.stopBroadcast();
 
-        console.log("commitment done:", uint256(commitHash));
-        return (cpqd, value, salt, commitHash);
+        console.log("commitment done:", uint256(cpqd.committedHash()));
+        return (cpqd, value, salt, cpqd.committedHash());
     }
 }
 
@@ -181,8 +181,31 @@ contract CPQDReveal is CPQDScript {
         cpqd.reveal(value, salt);
         vm.stopBroadcast();
 
-        console.log("commitment revealed:", salt, value);
-        return (cpqd, value, salt);
+        console.log("commitment revealed:", cpqd.revealedValue(), cpqd.revealedSalt());
+        return (cpqd, cpqd.revealedValue(), cpqd.revealedSalt());
+    }
+}
+
+/**
+ * @title Get winners after CPQD reveal.
+ * @author Tiago de Paula <tiagodepalves@gmail.com>
+ */
+contract CPQDResults is CPQDScript {
+    /**
+     * @return Information of the target contract in the network.
+     * @return Array of winner addresses.
+     */
+    function run() external returns (CPQD, address[] memory) {
+        CPQD cpqd = targetContract();
+
+        address[] memory results = cpqd.getResults();
+        for (uint256 i = 0; i < results.length; i++) {
+            console.log("winner:", i, "=>", results[i]);
+        }
+        if (results.length <= 0) {
+            console.log("no winners.");
+        }
+        return (cpqd, results);
     }
 }
 
